@@ -1,0 +1,105 @@
+mainmodule prk {
+
+//include "prk.h";
+readonly CProxy_Main	mainProxy;
+readonly CProxy_Cell  cellProxy;
+readonly  int64_t     T ;
+readonly int64_t     	g ;   // dimension of grid
+readonly int 		chare_dim_x;
+readonly int 		chare_dim_y;
+readonly int64_t	per_chare_x;
+readonly int64_t  	per_chare_y;
+readonly int64_t  	per_chare_edge_x;
+readonly int64_t  	per_chare_edge_y;
+readonly int  	removal_mode ;
+readonly int  	injection_mode ;
+readonly int  	injection_timestep;
+readonly int  	removal_timestep;
+readonly int  	corner_top_left_x_inj;
+readonly int  	corner_bottom_right_x_inj;
+readonly int  	corner_top_left_y_inj;
+readonly int  	corner_bottom_right_y_inj;
+readonly int  	corner_top_left_x_rmv;
+readonly int  	corner_bottom_right_x_rmv;
+readonly int  	corner_top_left_y_rmv;
+readonly int  	corner_bottom_right_y_rmv;
+readonly int         	particles_per_cell;
+readonly int         	k ;   // determines the speed of "horizontal move" of the particle distribution -- (2*k)+1 cells per time step
+readonly int         	m ;   // determines the speed of "vertical move" of the particle distribution -- m cells per time step
+  
+mainchare Main {
+	entry Main(CkArgMsg* m);
+    	entry [reductiontarget] void completed(int result);
+    	entry [reductiontarget] void validation(int result);
+    	entry [reductiontarget] void statistics(double result);
+    	entry void done_initialization();	
+    	entry void liveViz_support() {
+    	  for(itr=0;itr<chare_dim_x * chare_dim_y;itr++) {
+    	    when done_initialization() serial {;}
+    	  }
+    	  
+    	  serial {
+    	    cout <<"***************************done"<<endl;
+    	  }
+    	};
+};
+
+array [2D] Cell {
+	entry Cell(void);
+	entry void colorRegion(liveVizRequestMsg *m);
+	entry void initializeParticles(std::vector<particle_t> incoming);
+	entry void receiveParticles(int time,std::vector<particle_t> incoming);
+	entry void run() {
+		when initializeParticles(std::vector<particle_t> incoming)
+		serial
+		{
+			//if(x_cord==4 && y_cord==1)
+			//CkPrintf("%d %d : Received particles of size %d \n",x_cord,y_cord,incoming.size());
+			particles=incoming;
+			mainProxy.done_initialization();
+		}
+		serial
+		{
+			simulation_time=CkWallTimer();
+		}
+		//Now the particles vector is populated
+		for(time=0; time<T; time++){
+			serial {
+				//if(x_cord==4 && y_cord==1)
+				//CkPrintf("%d %d : time itr %d \n",x_cord,y_cord,time);
+			}
+			if (injection_mode && (time == injection_timestep))
+			serial {
+				inject_particles(injection_timestep, corner_top_left_x_inj, corner_bottom_right_x_inj, corner_top_left_y_inj, corner_bottom_right_y_inj, particles_per_cell, particles, my_start_gp_x, my_end_gp_x, my_start_gp_y, my_end_gp_y);
+			}
+			if (removal_mode && (time == removal_timestep))
+			serial  {
+				remove_particles_and_validate(removal_timestep, corner_top_left_x_rmv, corner_bottom_right_x_rmv, corner_top_left_y_rmv, corner_bottom_right_y_rmv, particles, &partial_correctness, grid, g, k, m, L, T);
+			}
+			
+			serial {
+				compute_displacement_forces();
+				sendParticles();
+			}
+			for(noNeighbours=0;noNeighbours<NEIGHBORS;noNeighbours++)
+			{
+				when receiveParticles[time](int time, std::vector<particle_t> incoming) 
+				serial 
+				{
+					//if(x_cord==4 && y_cord==1)
+					//cout<<"Received a req to add Particles from: "<<noNeighbours<<" at time iteration: "<<time<<" And particles size and incoming size:"<<particles.size()<<incoming.size()<<endl;
+					particles.insert(particles.end(),incoming.begin(),incoming.end());
+				}
+			}
+			
+		}
+		
+		serial {
+			compute_correctness();
+			simulation_time=CkWallTimer()-simulation_time;
+		}
+		
+	};
+};
+};
+

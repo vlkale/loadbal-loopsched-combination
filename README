@@ -1,0 +1,11 @@
+
+Build charm
+./build charm++ netlrts-linux-x86_64 smp -j8 -DCMK_TASKQUEUE
+cd tmp/
+make liveViz
+make ckloop
+
+To build prk
+set the path to charm dir
+make
+make test
