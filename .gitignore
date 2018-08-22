@@ -1,0 +1,15 @@
+# Add any directories, files, or patterns you don't want to be tracked by version control
+*~
+*.nav
+*.snm
+*.aux
+*.log
+*.bbl
+*.blg
+*.out
+*.pdf
+*.out.gz
+vivek-cklooppres.tex
+content_vivek-ckstalk.tex
+documentationForCkHybSchedScratch
+tags

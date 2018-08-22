@@ -1,0 +1,79 @@
+#!/bin/bash
+
+##PBS -N cklhexps
+##PBS -l nodes=64:ppn=4
+
+#PBS -N cklhexps
+#PBS -l nodes=2:ppn=32:xe
+#PBS -l walltime=02:00:00
+#PBS -m bea
+#PBS -M harshitha.menon@gmail.com
+#PBS -A gkq
+
+cd $PBS_O_WORKDIR
+
+
+totalSmpNodes=4
+ranksPerNode=15
+smpNodesPerNode=2 # 64 nodes *4 processes per node = 256 processes
+vecSize=0
+numChares=1
+numCharesPerPE=1
+staticFraction=0.00
+chunkSize=1
+opt=0 # implementation strategy - OpenMP vs CkLoop VS vSched. 
+
+lb_args="+balancer GreedyLB +LBDebug 1"
+logfile="prk_$smpNodesPerNode-smpnode-script-$ranksPerNode-ppn-lb.results"
+
+echo "ranks per node: $ranksPerNode"
+#for probSize in 32768; do
+for probSize in 1048576; do
+  #for chareMultiplier in 1; do
+  for chareMultiplier in 64 32 16; do
+  #for chareMultiplier in 1 2 4 8 16 32; do
+  echo "Running experiments for particle-in-cell code with problem size $probSize."  #TODO add loop above this line to vary problem size and modify this print statement accordingly.
+  #for staticFraction in 0.00; do
+  for staticFraction in 0.00 0.25 0.50 0.75 1.00; do
+  #for staticFraction in 0.00 0.125 0.25 0.375 0.50 0.625 0.75 0.875 1.00; do
+    #for chunkSize in 128; do
+    for chunkSize in 1 4 16 32 64 128 256; do
+      #time ./charmrun +p$numProcesses ./prk 512 400 32768 PATCH 32 16 64 64 256 256 $staticFraction $numChunks $opt ++ppn $processesPerNode
+      #aprun -n 1 -N 1 -d $ranksPerNode ./prk 512 400 $probSize PATCH 32 16 64 64 256 256 $staticFraction $numChunks $opt +ppn $ranksPerNode
+      #aprun -n $smpNodesPerNode -N $smpNodesPerNode -d $ranksPerNode ./prk 16384 20 $probSize PATCH 32 16 64 64 256 256  $chareMultiplier  $staticFraction $chunkSize $opt +ppn $ranksPerNode > myout.out
+      #aprun -n $smpNodesPerNode -N $smpNodesPerNode -d 16 ./prk 16384 20 $probSize PATCH 32 16 64 64 256 256  $chareMultiplier  $staticFraction $chunkSize $opt +ppn $ranksPerNode +pemap 1-15 +commap 0 > myout.out
+      aprun -n $totalSmpNodes -N $smpNodesPerNode -d 16 ./prk 512 100 $probSize PATCH 1 1 64 64 256 256  $chareMultiplier  $staticFraction $chunkSize $opt +ppn $ranksPerNode +pemap 1-15,17-31 +commap 0,16 $lb_args > myout.$smpNodesPerNode.lb.out
+      #aprun -n $smpNodesPerNode -N $smpNodesPerNode -d 16 ./prk 16384 20 $probSize PATCH 32 16 64 64 256 256  $chareMultiplier  $staticFraction $chunkSize $opt +ppn $ranksPerNode +pemap 1-15,17-31 +commap 0,16 > myout.out
+      #aprun -n $totalSmpNodes -N $smpNodesPerNode -d 16 ./prk 512 20 $probSize PATCH 4 4 64 64 256 256  $chareMultiplier  $staticFraction $chunkSize $opt +ppn $ranksPerNode +pemap 1-15,17-31 +commap 0,16 $lb_args > myout.out
+      #aprun -n 1 -N 1 -d $ranksPerNode ./prk 512 100 $probSize PATCH 32 16 64 64 256 256  $chareMultiplier  $staticFraction $chunkSize $opt +ppn $ranksPerNode > myout.out
+      runtime=`grep -i "taken for execution" myout.$smpNodesPerNode.lb.out | cut -d ":" -f 2 | cut -d " " -f 1`
+      echo "$chareMultiplier $staticFraction $chunkSize $runtime" >> $logfile
+    done
+  done
+  done
+done
+
+for probSize in 1048576; do
+  #for chareMultiplier in 1; do
+  for chareMultiplier in 64 32 16; do
+  #for chareMultiplier in 1 2 4 8 16 32; do
+  echo "Running experiments for particle-in-cell code with problem size $probSize."  #TODO add loop above this line to vary problem size and modify this print statement accordingly.
+  #for staticFraction in 0.00; do
+  for staticFraction in 0.00 0.25 0.50 0.75 1.00; do
+  #for staticFraction in 0.00 0.125 0.25 0.375 0.50 0.625 0.75 0.875 1.00; do
+    #for chunkSize in 128; do
+    for chunkSize in 1 4 16 32 64 128 256; do
+      #time ./charmrun +p$numProcesses ./prk 512 400 32768 PATCH 32 16 64 64 256 256 $staticFraction $numChunks $opt ++ppn $processesPerNode
+      #aprun -n 1 -N 1 -d $ranksPerNode ./prk 512 400 $probSize PATCH 32 16 64 64 256 256 $staticFraction $numChunks $opt +ppn $ranksPerNode
+      #aprun -n $smpNodesPerNode -N $smpNodesPerNode -d $ranksPerNode ./prk 16384 20 $probSize PATCH 32 16 64 64 256 256  $chareMultiplier  $staticFraction $chunkSize $opt +ppn $ranksPerNode > myout.out
+      #aprun -n $smpNodesPerNode -N $smpNodesPerNode -d 16 ./prk 16384 20 $probSize PATCH 32 16 64 64 256 256  $chareMultiplier  $staticFraction $chunkSize $opt +ppn $ranksPerNode +pemap 1-15 +commap 0 > myout.out
+      aprun -n $totalSmpNodes -N $smpNodesPerNode -d 16 ./prk 512 100 $probSize PATCH 1 1 64 64 256 256  $chareMultiplier  $staticFraction $chunkSize $opt +ppn $ranksPerNode +pemap 1-15,17-31 +commap 0,16 > myout.$smpNodesPerNode.out
+      #aprun -n $smpNodesPerNode -N $smpNodesPerNode -d 16 ./prk 16384 20 $probSize PATCH 32 16 64 64 256 256  $chareMultiplier  $staticFraction $chunkSize $opt +ppn $ranksPerNode +pemap 1-15,17-31 +commap 0,16 > myout.out
+      #aprun -n $totalSmpNodes -N $smpNodesPerNode -d 16 ./prk 512 20 $probSize PATCH 4 4 64 64 256 256  $chareMultiplier  $staticFraction $chunkSize $opt +ppn $ranksPerNode +pemap 1-15,17-31 +commap 0,16 $lb_args > myout.out
+      #aprun -n 1 -N 1 -d $ranksPerNode ./prk 512 100 $probSize PATCH 32 16 64 64 256 256  $chareMultiplier  $staticFraction $chunkSize $opt +ppn $ranksPerNode > myout.out
+      runtime=`grep -i "taken for execution" myout.$smpNodesPerNode.out | cut -d ":" -f 2 | cut -d " " -f 1`
+      echo "$chareMultiplier $staticFraction $chunkSize $runtime" >> $logfile
+    done
+  done
+  done
+done

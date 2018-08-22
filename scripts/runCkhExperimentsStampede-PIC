@@ -1,0 +1,25 @@
+#!/bin/sh
+
+#PBS -N cklhexps
+#PBS -l nodes=64:ppn=4
+
+set numNodes= 64
+set processesPerNode=4
+set numProcesses= 256 # 64 nodes *4 processes per node = 256 processes
+set vecSize=0
+set numChares=1
+set numCharesPerPE=1
+set staticFraction=0.00
+set chunkSize=1
+
+set opt= 0 # implementation strategy - OpenMP vs CkLoop VS vSched. 
+
+for probSize in 32768; do
+echo "Running experiments for particle-in-cell code with problem size $probSize."  #TODO add loop above this line to vary problem size and modify this print statement accordingly.
+	  for staticFraction in 0.00 0.125 0.25 0.375 0.50 0.625 0.75 0.875 1.00; do
+	      for chunkSize in 1 2 4 8; do
+		  time ./charmrun +p$numProcesses ./prk 512 400 32768 PATCH 32 16 64 64 256 256 $staticFraction $numChunks $opt ++ppn $processesPerNode
+	      done
+	  done
+      done
+  done
