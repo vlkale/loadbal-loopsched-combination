@@ -4,3 +4,9 @@ This directory contains a library that provides a strategy of combined, synergis
 
 
 The repository is the open-source version of the closed bitbucket repository for developing code files CkLoop.C and CkLoop.h into Charm++ source code base's subdirectory /src/libs/ck-libs/ckloop to integrate the hybrid static/dynamic scheduling strategy into the files. The code files can placed into the Charm++ source code's subdirectory /src/libs/ck-libs/ckloop and the Charm++ library can then be rebuilt on one's machine in order to use the hybrid static/dynamic scheduling strategy within one's Charm++ + CkLoop program.
+
+
+
+
+
+# Documentation of Functions
