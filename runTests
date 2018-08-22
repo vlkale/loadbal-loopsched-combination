@@ -1,0 +1,6 @@
+#!/bin/bash
+
+./charmrun ./dotProd 1 +p1 ++ppn 1 ++local
+./charmrun ./dotProd 1 +p2 ++ppn 2 ++local
+./charmrun ./dotProd 2 +p2 ++ppn 2 ++local
+./charmrun ./dotProd 1 +p4 ++ppn 4 ++local
